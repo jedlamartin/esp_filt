@@ -3,20 +3,45 @@
 #include "dac.h"
 #include "filter.h"
 
-adc_oneshot_unit_handle_t adc;
+adc_continuous_handle_t adc;
+extern TaskHandle_t filter_task;
 
-char* tag = "ADC";
+static bool adc_callback(adc_continuous_handle_t handle,
+                         const adc_continuous_evt_data_t* edata,
+                         void* user_data) {
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    vTaskNotifyGiveFromISR(filter_task, &xHigherPriorityTaskWoken);
+
+    return (xHigherPriorityTaskWoken == pdTRUE);
+}
 
 void conf_adc(adc_channel_t ADC_CHANNEL) {
-    // Configure ADC
-    const adc_oneshot_unit_init_cfg_t adc_config = {
-        .clk_src = ADC_DIGI_CLK_SRC_DEFAULT,
-        .unit_id = ADC_UNIT_1,
-        .ulp_mode = ADC_ULP_MODE_DISABLE};
-    ESP_ERROR_CHECK(adc_oneshot_new_unit(&adc_config, &adc));
+    adc_continuous_handle_cfg_t handle_cfg = {
+        .max_store_buf_size = ADC_BUFFER_SIZE * 2,
+        .conv_frame_size = ADC_BUFFER_SIZE,
+    };
+    ESP_ERROR_CHECK(adc_continuous_new_handle(&handle_cfg, &adc));
 
-    const adc_oneshot_chan_cfg_t cfg = {.atten = ADC_ATTEN_DB_0,
-                                        .bitwidth = ADC_BITWIDTH_12};
+    adc_digi_pattern_config_t pattern = {.atten = ADC_ATTEN_DB_12,
+                                         .channel = ADC_CHANNEL,
+                                         .unit = ADC_UNIT_1,
+                                         .bit_width = ADC_BITWIDTH_12};
 
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc, ADC_CHANNEL, &cfg));
+    adc_continuous_config_t cont_cfg = {
+        .pattern_num = 1,
+        .adc_pattern = &pattern,
+        .sample_freq_hz = FS,
+        .conv_mode = ADC_CONV_SINGLE_UNIT_1,
+        .format = ADC_DIGI_OUTPUT_FORMAT_TYPE1,
+    };
+
+    ESP_ERROR_CHECK(adc_continuous_config(adc, &cont_cfg));
+
+    // 3. Register event callback
+    adc_continuous_evt_cbs_t cbs = {
+        .on_conv_done = adc_callback,
+    };
+    ESP_ERROR_CHECK(adc_continuous_register_event_callbacks(adc, &cbs, NULL));
 }
+
+void start_adc() { ESP_ERROR_CHECK(adc_continuous_start(adc)); }
