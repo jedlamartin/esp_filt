@@ -38,23 +38,12 @@ void app_main() {
 
     conf_i2c();
 
-    // Generate filter
-    generateTable();
+    conf_dac();
+    config_timer();
+    start_timer();
 
-    xTaskCreatePinnedToCore(vTaskConvolve,
-                            "Conv1",
-                            4096,
-                            &chunk1,
-                            tskIDLE_PRIORITY + 2,
-                            &conv_task_handle1,
-                            0);
-    xTaskCreatePinnedToCore(vTaskConvolve,
-                            "Conv2",
-                            4096,
-                            &chunk2,
-                            tskIDLE_PRIORITY + 2,
-                            &conv_task_handle2,
-                            1);
+    // Generate filter
+    init_filter();
 
     // Create tasks
     xTaskCreate(vTaskFilter,
@@ -98,13 +87,13 @@ void vTaskSendComPort(void* pvParameters) {
 }
 
 void vTaskFilter(void* pvParameters) {
-    uint8_t sample = 0;
+    uint8_t raw_samples[ADC_BUFFER_SIZE];
     for(;;) {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
         uint32_t bytes_copied = 0;
         ESP_ERROR_CHECK(adc_continuous_read(
-            adc, &sample, ADC_BUFFER_SIZE, &bytes_copied, 0));
+            adc, raw_samples, ADC_BUFFER_SIZE, &bytes_copied, 0));
 
         if(bytes_copied != ADC_BUFFER_SIZE) {
             ESP_LOGE(TAG,
@@ -112,8 +101,8 @@ void vTaskFilter(void* pvParameters) {
                      bytes_copied,
                      ADC_BUFFER_SIZE);
         }
-
-        float filtered_tmp = filter(sample);
+        uint16_t sample = ((adc_digi_output_data_t*) raw_samples)->type1.data;
+        float filtered_tmp = filter((float) sample);
 
         if(xSemaphoreTake(mutex, portMAX_DELAY) == pdTRUE) {
             filtered = filtered_tmp;

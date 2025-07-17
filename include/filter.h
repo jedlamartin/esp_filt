@@ -5,27 +5,16 @@
 #include "adc.h"
 #include "dac.h"
 
-#define FILTER_PERIODS 10
-#define RMS_PERIODS    500
-#define BUF_LENGTH     (int) (((FS) / (SINE_FREQ)) * (FILTER_PERIODS))
-#define RMS_LENGTH     (int) (((FS) / (SINE_FREQ)) * (RMS_PERIODS))
-
-extern float buffer[BUF_LENGTH];
-extern int buffer_pointer;
-extern float sine_table[BUF_LENGTH];
+#define BIQ_NUM     5
+#define RMS_PERIODS 500
+#define RMS_LENGTH  (int) (((FS) / (SINE_FREQ)) * (RMS_PERIODS))
 
 typedef struct {
-    const int start;
-    const int end;
-    float result_sine;
-    float result_cosine;
-} ConvChunk;
+    float a[3];
+    float b[3];
+    float aBuffer[2];
+    float bBuffer[2];
+} Biquad;
 
-extern TaskHandle_t conv_task_handle2;
-extern TaskHandle_t conv_task_handle1;
-extern ConvChunk chunk1;
-extern ConvChunk chunk2;
-
-void generateTable();
+void init_filter();
 float filter(int newValue);
-void vTaskConvolve(void* param);

@@ -8,7 +8,7 @@
 #define _USE_MATH_DEFINES
 #define SINE_FREQ 1000
 #define SINE_AMP  0.35
-#define DAC_FS    10000
+#define DAC_FS    20e3    // 20kHz
 
 extern dac_oneshot_handle_t dac;
 extern uint8_t* DAC_BUFFER;
