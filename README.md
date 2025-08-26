@@ -1,49 +1,56 @@
-# ESP32 DAC/ADC & Digital Filtering System
+# ESP32 Analog Measurement & Digital Filtering System
 
-An ESP32 firmware project that demonstrates a complete measurement loop: generating an analog test signal with the onboard DAC, buffering it through an external op-amp circuit, acquiring it via the ADC, applying a real-time digital bandpass filter, and transmitting results over serial. Built with ESP-IDF in the PlatformIO environment.
+This project implements a complete analog measurement and digital signal processing pipeline on the ESP32, designed for precision sensor interfacing and real-time data analysis. It demonstrates how to generate analog test signals, buffer and acquire them, apply digital filtering, and transmit results for further analysis.
 
-## Project Description
+## Overview
 
-This project was designed to interface with a custom resistive bridge measurement circuit. The core task was to create a stable, software-defined measurement system. The ESP32's DAC (Digital-to-Analog Converter) generates a precise waveform to excite the bridge circuit. The resulting analog signal from the bridge is highly susceptible to noise. This signal is acquired by the ADC (Analog-to-Digital Converter) and then processed in real-time on the ESP32 using a cascaded biquad (Second-Order Section) filter to isolate the frequency band of interest before the clean data is output via UART.
+The system is tailored for use with a resistive bridge sensor circuit, but the architecture is adaptable to other analog measurement scenarios. The ESP32's onboard DAC generates a stable excitation waveform, which is buffered by an external op-amp before being applied to the sensor. The sensor's output is read by the ESP32's ADC, digitally filtered to isolate the signal of interest, and then streamed over UART for visualization or logging.
 
-## Implementation Overview
+## System Architecture
 
-1.  **Signal Generation:** The ESP32's DAC (GPIO 25) is programmed to output a specific waveform (e.g., sine wave) at a defined frequency and amplitude.
-2.  **Hardware Interface:** The DAC output is buffered by an op-amp (configured as a voltage follower) to provide sufficient current to drive the resistive bridge without loading the DAC.
-3.  **Signal Acquisition:** The voltage from the midpoint of the bridge is read back into the system using the ESP32's ADC (GPIO 34).
-4.  **Digital Signal Processing (DSP):** Each sample from the ADC is passed through a real-time bandpass filter implemented as a cascade of biquad filters. This software filter removes DC offset, high-frequency noise, and any unwanted frequency components.
-5.  **Data Output:** The filtered results are periodically formatted and sent over the serial port (UART) at 115200 baud for monitoring, plotting, or logging on a host computer.
+1.  **Signal Generation:** The ESP32 DAC (GPIO 25) outputs a programmable waveform (e.g., sine wave) with configurable frequency and amplitude to excite the sensor circuit.
+2.  **Buffering:** An external op-amp, configured as a voltage follower, buffers the DAC output to prevent loading and ensure signal integrity.
+3.  **Signal Acquisition:** The sensor's analog output (typically the midpoint of a resistive bridge) is sampled by the ESP32 ADC (GPIO 34).
+4.  **Digital Filtering:** Each ADC sample is processed in real-time by a cascaded biquad (second-order section) bandpass filter, implemented in software, to remove noise and unwanted frequency components.
+5.  **Data Output:** Filtered data is formatted and transmitted over UART (115200 baud) for monitoring, plotting, or logging on a host computer.
 
-## Key Features
+## Features
 
-*   Hardware-based signal generation via ESP32 DAC.
-*   Real-time signal processing using a custom biquad filter library.
-*   Configurable filter parameters (center frequency, bandwidth).
-*   Serial data output for external analysis.
+- Software-defined analog signal generation using ESP32 DAC
+- Real-time digital bandpass filtering with configurable parameters
+- Robust hardware interface for sensor excitation and signal buffering
+- Serial data streaming for easy integration with analysis tools
+- Modular code structure for easy adaptation to other sensor types
 
-## Build & Flash
+## Getting Started
 
-This is a PlatformIO project. Open it in VSCode with the PlatformIO extension installed.
+This is a PlatformIO project. To build and flash the firmware:
 
-1.  **Clone the repo:**
+1. **Clone the repository:**
     ```bash
     git clone https://github.com/jedlamartin/esp_filt.git
     ```
-2.  **Open** the project directory in VSCode.
-3.  **Build** (PlatformIO toolbar checkmark).
-4.  **Connect** ESP32 via USB.
-5.  **Upload** (PlatformIO toolbar arrow).
-6.  **Monitor** serial output (PlatformIO toolbar plug icon).
+2. **Open** the project in VSCode with the PlatformIO extension.
+3. **Build** the project (checkmark icon in PlatformIO toolbar).
+4. **Connect** your ESP32 board via USB.
+5. **Upload** the firmware (arrow icon in PlatformIO toolbar).
+6. **Monitor** the serial output (plug icon in PlatformIO toolbar).
 
-## Hardware Setup
+## Hardware Connections
 
-| ESP32 Pin | Connection          | Function               |
-| :-------- | :------------------ | :--------------------- |
-| GPIO 25   | Op-Amp Input        | DAC Output (Signal Gen)|
-| GPIO 34   | Bridge Midpoint     | ADC Input (Measurement)|
-| GND       | Circuit GND         | Common Ground          |
-| 3.3V      | Op-Amp VCC          | Power                  |
+| ESP32 Pin | Connection          | Function                   |
+| :-------- | :------------------ | :------------------------- |
+| GPIO 25   | Op-Amp Input        | DAC Output (Excitation)    |
+| GPIO 34   | Bridge Midpoint     | ADC Input (Measurement)    |
+| GND       | Circuit GND         | Common Ground              |
+| 3.3V      | Op-Amp VCC          | Power                      |
+
+## Customization
+
+- **Waveform Generation:** Modify the waveform type, frequency, or amplitude in the firmware to suit your sensor or test requirements.
+- **Filter Parameters:** Adjust the biquad filter coefficients to target your desired frequency band.
+- **Data Output:** Change the UART format or baud rate as needed for your host application.
 
 ## License
 
-MIT License. See `LICENSE` file for details.
+MIT License. See `LICENSE` for details.
